@@ -411,7 +411,9 @@ export class HydrusApiService {
     service_names_to_tags?: ServiceNamesOrKeysToTags,
     service_keys_to_tags?: ServiceNamesOrKeysToTags,
     service_names_to_actions_to_tags?: ServiceNamesOrKeysToActionsToTags,
-    service_keys_to_actions_to_tags?: ServiceNamesOrKeysToActionsToTags
+    service_keys_to_actions_to_tags?: ServiceNamesOrKeysToActionsToTags,
+    override_previously_deleted_mappings?: boolean, // added in hydrus v580
+    create_new_deleted_mappings?: boolean // added in hydrus v580
   } & HydrusRequestFiles) {
     return this.apiPost<void>('add_tags/add_tags', data);
   }

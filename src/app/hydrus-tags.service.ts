@@ -67,7 +67,7 @@ export class HydrusTagsService {
     )
   }
 
-  deleteTagsFromLocalServiceFileIDs(file_ids: number[], tags: string[], serviceKey: string) {
+  deleteTagsFromLocalServiceFileIDs(file_ids: number[], tags: string[], serviceKey: string, create_new_deleted_mappings = false) {
     return this.api.addTags(
       {
         file_ids,
@@ -75,7 +75,8 @@ export class HydrusTagsService {
           [serviceKey]: {
             "1": tags
           }
-        }
+        },
+        create_new_deleted_mappings
       }
     )
   }

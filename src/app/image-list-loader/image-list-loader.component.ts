@@ -12,6 +12,7 @@ import { getLocalTagServices } from '../hydrus-services';
 import { TagInputDialogComponent } from '../tag-input-dialog/tag-input-dialog.component';
 import { HydrusTagsService } from '../hydrus-tags.service';
 import { union } from 'set-utilities';
+import { HydrusVersionService } from '../hydrus-version.service';
 
 @Component({
   selector: 'app-image-list-loader',
@@ -48,7 +49,8 @@ export class ImageListLoaderComponent implements OnInit, OnChanges {
     private snackbar: MatSnackBar,
     private dialog: MatDialog,
     private errorService: ErrorService,
-    private tagsService: HydrusTagsService
+    private tagsService: HydrusTagsService,
+    private versionService: HydrusVersionService
   ) {
 
   }
@@ -242,7 +244,8 @@ export class ImageListLoaderComponent implements OnInit, OnChanges {
       })
       const dialogResult = await firstValueFrom(tagsDialog.afterClosed());
       if (dialogResult) {
-        if (!await ConfirmDialogComponent.confirmPromise(this.dialog, {
+        // the ability to disable creating new deleted mappings for tags that weren't on the file to begin with was added in hydrus v580
+        if (!await firstValueFrom(this.versionService.isAtLeastVersion(580)) && !await ConfirmDialogComponent.confirmPromise(this.dialog, {
           title: 'Delete tags from selected files?',
           description: `This will attempt to delete the selected tags from ${this.numSelected()} files. A deletion record will be created for the tags on all selected files, including those that do not currently have the tags.`,
         })) return;
