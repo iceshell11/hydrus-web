@@ -39,22 +39,7 @@
       <span>File Info</span>
     </button>
     <mat-divider></mat-divider>
-    <a mat-menu-item rel="noopener noreferrer" target="_blank" href="{{file.file_url}}">
-      <mat-icon>open_in_new</mat-icon>
-      <span>Open file in new tab</span>
-    </a>
-    <button mat-menu-item [cdkCopyToClipboard]="file.hash">
-      <mat-icon>content_copy</mat-icon>
-      <span>Copy SHA256 hash</span>
-    </button>
-    <button mat-menu-item (click)="shareFile(file)">
-      <mat-icon>share</mat-icon>
-      <span>Share File</span>
-    </button>
-    <button mat-menu-item (click)="saveFile(file)">
-      <mat-icon>get_app</mat-icon>
-      <span>Download File</span>
-    </button>
+    <app-file-context-menu-actions [file]="file"></app-file-context-menu-actions>
   </ng-template>
 </mat-menu>
 

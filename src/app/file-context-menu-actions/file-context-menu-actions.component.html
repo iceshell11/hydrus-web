@@ -1,0 +1,47 @@
+<a mat-menu-item rel="noopener noreferrer" target="_blank" href="{{file().file_url}}">
+  <mat-icon>open_in_new</mat-icon>
+  <span>Open in New Tab</span>
+</a>
+@if (downloadService.canShare) {
+  <button mat-menu-item (click)="shareFile()">
+    <mat-icon>share</mat-icon>
+    <span>Share</span>
+  </button>
+}
+<button mat-menu-item (click)="saveFile()">
+  <mat-icon>get_app</mat-icon>
+  <span>Download</span>
+</button>
+<mat-divider></mat-divider>
+@if (fullFile$ | async; as fullFile) {
+
+  @if (fullFile.is_inbox) {
+    <button mat-menu-item (click)="archiveFile()">
+      <mat-icon>archive</mat-icon>
+      <span>Archive</span>
+    </button>
+  } @else {
+    <button mat-menu-item (click)="unarchiveFile()">
+      <mat-icon>move_to_inbox</mat-icon>
+      <span>Return to Inbox</span>
+    </button>
+  }
+  @if (!fullFile.is_trashed) {
+    <button mat-menu-item (click)="deleteFile()">
+      <mat-icon>delete</mat-icon>
+      <span>Delete</span>
+    </button>
+  } @else {
+    <button mat-menu-item (click)="undeleteFile()">
+      <mat-icon>restore_from_trash</mat-icon>
+      <span>Undelete</span>
+    </button>
+  }
+} @else {
+  <button mat-menu-item disabled>
+    <span>Loading...</span>
+  </button>
+  <button mat-menu-item disabled>
+    <span>Loading...</span>
+  </button>
+}

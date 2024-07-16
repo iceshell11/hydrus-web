@@ -21,6 +21,7 @@ import { FileInfoSheetComponent } from '../file-info-sheet/file-info-sheet.compo
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { HydrusFileDownloadService } from '../hydrus-file-download.service';
 import { difference, union } from 'set-utilities';
+import { HydrusFilesService } from '../hydrus-files.service';
 
 @Component({
   selector: 'app-image-list',
@@ -52,7 +53,7 @@ export class ImageListComponent implements OnInit, OnChanges {
     public photoswipe: PhotoswipeService,
     public cdr: ChangeDetectorRef,
     private bottomSheet: MatBottomSheet,
-    public downloadService: HydrusFileDownloadService,
+    public downloadService: HydrusFileDownloadService
   ) {
   }
 
@@ -95,14 +96,6 @@ export class ImageListComponent implements OnInit, OnChanges {
     FileInfoSheetComponent.open(this.bottomSheet, file)
   }
 
-  saveFile(file: HydrusBasicFile) {
-    this.downloadService.saveFile(file);
-  }
-
-  shareFile(file: HydrusBasicFile) {
-    this.downloadService.shareFile(file);
-  }
-
   select(file: HydrusBasicFile) {
     this.selected.update(s => union(s, new Set([file.file_id])))
   }
@@ -120,7 +113,6 @@ export class ImageListComponent implements OnInit, OnChanges {
       }
     })
   }
-
 
 
 

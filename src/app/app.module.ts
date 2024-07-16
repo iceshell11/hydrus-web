@@ -97,6 +97,7 @@ import { isSingleTagPipe } from "./hydrus-tags";
 import { MatContextMenuTriggerDirective } from "./mat-context-menu-trigger";
 import { ImageListItemComponent } from './image-list-item/image-list-item.component';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { FileContextMenuActionsComponent } from './file-context-menu-actions/file-context-menu-actions.component';
 
 
 const MAT_MODULES = [
@@ -175,6 +176,7 @@ const MAT_MODULES = [
     MatContextMenuTriggerDirective,
     ImageListItemComponent,
     ConfirmDialogComponent,
+    FileContextMenuActionsComponent,
   ],
   bootstrap: [AppComponent],
   imports: [
