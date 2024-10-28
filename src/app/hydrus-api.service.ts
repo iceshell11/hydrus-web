@@ -15,6 +15,7 @@ import { HydrusKeyVerificationData, HydrusRequestFileDomain, HydrusRequestFiles,
 import { HydrusJobStatus, HydrusJobStatusAddRequest, HydrusJobStatusUpdateRequest } from './hydrus-job-status';
 import { HydrusPage, HydrusPageListItem } from './hydrus-page';
 import { HydrusClientOptions } from './hydrus-client-options';
+import { HydrusFiletype } from './hydrus-file-mimes';
 
 type AngularHttpParams =  {
   [param: string]: string | number | boolean | ReadonlyArray<string | number | boolean>;
@@ -267,8 +268,13 @@ export class HydrusApiService {
    * @param file_hash the hash of the file to get a render of
    * @return the URL of the rendered file referenced by the hash
    */
-  public getRenderedURLFromHash(file_hash: string): string {
-    return this.getAPIUrl() + 'get_files/render?hash=' + file_hash + '&Hydrus-Client-API-Access-Key=' + this.hydrusApiKey;
+  public getRenderedURLFromHash(file_hash: string, file_type: HydrusFiletype): string {
+    const baseRenderUrl = this.getAPIUrl() + 'get_files/render?hash=' + file_hash + '&Hydrus-Client-API-Access-Key=' + this.hydrusApiKey;
+    if(file_type === HydrusFiletype.ANIMATION_UGOIRA) {
+      return baseRenderUrl + '&render_format=' + HydrusFiletype.ANIMATION_WEBP
+    } else {
+      return baseRenderUrl;
+    }
   }
 
 

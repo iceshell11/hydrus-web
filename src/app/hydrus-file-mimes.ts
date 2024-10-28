@@ -673,12 +673,19 @@ const renderableFiletypes = [
 ]
 
 const renderableFiletypes548 = [
-  ...IMAGES,
-  HydrusFiletype.APPLICATION_PSD,
+  ...renderableFiletypes,
   HydrusFiletype.APPLICATION_KRITA
 ]
 
+const renderableFiletypes596 = [
+  ...renderableFiletypes548,
+  HydrusFiletype.ANIMATION_UGOIRA
+]
+
 export function isFileHydrusRenderable(mime: HydrusFiletype, hydrusVersion?: number) {
+  if(hydrusVersion && hydrusVersion >= 596) {
+    return renderableFiletypes596.includes(mime);
+  }
   if(hydrusVersion && hydrusVersion >= 548) {
     return renderableFiletypes548.includes(mime);
   }

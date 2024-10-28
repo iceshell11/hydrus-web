@@ -50,7 +50,7 @@ export function getTagValue(tag: string) {
     tag = tag.substring(1);
   }
   if (!tag.includes(':')) { return tag; }
-  return tag.split(':')[1].toLowerCase();
+  return tag.split(':', 2)[1].toLowerCase();
 }
 
 function getTagNamespaceClass(tag: string) {

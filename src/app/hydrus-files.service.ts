@@ -175,7 +175,7 @@ export class HydrusFilesService {
       file_category: getFileCategory(file_type, hydrusVersion),
       file_type_string,
       has_thumbnail: hasThumbnail(file_type),
-      ...(renderable ? {render_url: this.api.getRenderedURLFromHash(file.hash)} : {})
+      ...(renderable ? {render_url: this.api.getRenderedURLFromHash(file.hash, file_type)} : {})
     }
   }
 
