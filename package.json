@@ -37,6 +37,7 @@
     "@rx-angular/template": "^18.0.0",
     "@types/byte-size": "^8.1.0",
     "byte-size": "^8.1.0",
+    "@floogulinc/construct-style-sheets-polyfill": "^3.2.0",
     "dequal": "^2.0.3",
     "exifreader": "^4.20.0",
     "fast-blurhash": "^1.1.2",
