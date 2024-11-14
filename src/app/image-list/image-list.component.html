@@ -3,7 +3,9 @@
   <ul class="mdc-image-list browse-image-list" #container>
     @for (file of scroll.viewPortItems; track file.file_id) {
       <li class="mdc-image-list__item grid-item">
-        <a [href]="file.file_url"
+        <a
+          class="image-list-link"
+          [href]="file.file_url"
           (click)="fileClick($event, file)"
           [appMatContextMenuTriggerFor]="fileMenu"
           [matMenuTriggerData]="{file}"
