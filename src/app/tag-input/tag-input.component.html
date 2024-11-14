@@ -46,19 +46,19 @@
     >
   </mat-chip-grid>
   <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
-    @if (filteredTags | async; as tags) {
-      @if (tags.length > 25) {
+    @if ((enableSystemPredicates ? filteredTags$ : filteredTagsFromAPI$) | async; as tags) {
+      @if (tags.length > 100) {
         <cdk-virtual-scroll-viewport
           class="virtual-scroll-viewport-full-width"
           itemSize="48" minBufferPx="256" maxBufferPx="512">
-          <mat-option *cdkVirtualFor="let tag of tags" [value]="tag.value" [attr.data-tag-namespace]="tag.value | tagNamespace" class="theming tag-color">
-            {{tag.value}} ({{tag.count | number}})
+          <mat-option *cdkVirtualFor="let tag of tags" [value]="tag" [attr.data-tag-namespace]="tag.value | tagNamespace" class="theming tag-color">
+            {{tag.value}} @if(tag.count) { ({{tag.count | number}}) }
           </mat-option>
         </cdk-virtual-scroll-viewport>
       } @else {
         @for (tag of tags; track tag.value) {
-          <mat-option [value]="tag.value" [attr.data-tag-namespace]="tag.value | tagNamespace" class="theming tag-color">
-            {{tag.value}} ({{tag.count | number}})
+          <mat-option [value]="tag" [attr.data-tag-namespace]="tag.value | tagNamespace" class="theming tag-color">
+            {{tag.value}} @if(tag.count) { ({{tag.count | number}}) }
           </mat-option>
         }
       }

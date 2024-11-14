@@ -410,3 +410,10 @@ export const ratingOperators: Partial<Record<SystemPredicate, string[]>> = {
     'is about'
   ]
 }
+
+export const systemTagsForSearch =
+  predicateGroups.flatMap(g => 'predicate' in g ? g.predicate : g.predicates)
+  .map(systemPredicate => ({
+    systemPredicate,
+    value: `system:${allSystemPredicates[systemPredicate].name}`
+  }))

@@ -1,15 +1,15 @@
 import { HydrusFilesService } from './../hydrus-files.service';
-import { Component, OnInit, Output, EventEmitter, ViewChild, ElementRef, Input, Optional, Self } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, ViewChild, ElementRef, Input, Optional, Self, input } from '@angular/core';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
 import { MatChipInputEvent } from '@angular/material/chips';
-import { ControlValueAccessor, NgControl, UntypedFormControl } from '@angular/forms';
-import { switchMap } from 'rxjs/operators';
-import { MatAutocompleteSelectedEvent, MatAutocomplete } from '@angular/material/autocomplete';
-import { Observable, firstValueFrom, of } from 'rxjs';
+import { ControlValueAccessor, FormControl, NgControl, UntypedFormControl } from '@angular/forms';
+import { distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { MatAutocompleteSelectedEvent, MatAutocomplete, MatOption } from '@angular/material/autocomplete';
+import { Observable, combineLatest, firstValueFrom, of } from 'rxjs';
 import { HydrusTagsService } from '../hydrus-tags.service';
 import { HydrusSearchTags, HydrusTagSearchTag, TagDisplayType, isSingleTag } from '../hydrus-tags';
 import { MatDialog } from '@angular/material/dialog';
-import { allSystemPredicates, predicateGroups, SystemPredicate } from '../hydrus-system-predicates';
+import { allSystemPredicates, predicateGroups, SystemPredicate, systemTagsForSearch } from '../hydrus-system-predicates';
 import { SystemPredicateDialogComponent } from '../system-predicate-dialog/system-predicate-dialog.component';
 import { TagInputDialogComponent } from '../tag-input-dialog/tag-input-dialog.component';
 import { SettingsService } from '../settings.service';
@@ -38,6 +38,12 @@ interface ConvertedPredicateGroup {
   predicates: ConvertedPredicate[]
 }
 
+export interface HydrusTagSearchTagUI {
+  value: string,
+  count?: number,
+  systemPredicate?: SystemPredicate
+}
+
 @Component({
   selector: 'app-tag-input',
   templateUrl: './tag-input.component.html',
@@ -49,9 +55,6 @@ export class TagInputComponent implements OnInit, ControlValueAccessor {
 
   searchTags: HydrusSearchTags = [];
   readonly separatorKeysCodes: number[] = [ENTER, COMMA];
-
-  tagCtrl = new UntypedFormControl();
-  filteredTags: Observable<HydrusTagSearchTag[]>;
 
   //inputControl = new FormControl("", this.validators)
 
@@ -68,6 +71,22 @@ export class TagInputComponent implements OnInit, ControlValueAccessor {
   @Input() displayType: TagDisplayType = 'display';
 
   @Input() enableSiblingParentsDialog = true;
+
+  showSystemPredicateAutocompleteByDefault = input()
+
+
+  tagCtrl = new FormControl('');
+  filteredTagsFromAPI$: Observable<HydrusTagSearchTagUI[]> = this.tagCtrl.valueChanges.pipe(
+    switchMap(search => search && search.length >= 3 ? this.tagsService.searchTags(search, this.displayType) : of([]))
+  );
+
+  filteredSystemPredicates$: Observable<HydrusTagSearchTagUI[]> = this.tagCtrl.valueChanges.pipe(
+    map((input) => input ? systemTagsForSearch.filter(p => p.value.startsWith(input)) : []),
+  );
+
+  filteredTags$: Observable<HydrusTagSearchTagUI[]> = combineLatest([this.filteredTagsFromAPI$, this.filteredSystemPredicates$, ]).pipe(
+    map(([api, predicates]) => [...api, ...predicates]),
+  )
 
   @Output()
   tags = new EventEmitter<HydrusSearchTags>();
@@ -87,11 +106,7 @@ export class TagInputComponent implements OnInit, ControlValueAccessor {
     if (this.controlDir) {
       this.controlDir.valueAccessor = this
     }
-
-    this.filteredTags = this.tagCtrl.valueChanges.pipe(
-      switchMap(search => search && search.length >= 3 ? this.tagsService.searchTags(search, this.displayType) : of([]))
-    );
-   }
+  }
 
   favoriteTags = this.settingsService.appSettings.favoriteTags;
 
@@ -180,8 +195,14 @@ export class TagInputComponent implements OnInit, ControlValueAccessor {
   }
 
   selected(event: MatAutocompleteSelectedEvent): void {
-    const negated = this.tagInput.nativeElement.value.startsWith('-');
-    this.addSearchTag((negated ? '-' : '') + event.option.value);
+    const option: MatOption<HydrusTagSearchTagUI> = event.option
+    console.log(option)
+    if(option.value.systemPredicate) {
+      this.systemPredicateButton(option.value.systemPredicate)
+    } else {
+      const negated = this.tagInput.nativeElement.value.startsWith('-');
+      this.addSearchTag((negated ? '-' : '') + option.value.value);
+    }
     this.tagInput.nativeElement.value = '';
     this.tagCtrl.setValue(null);
   }
