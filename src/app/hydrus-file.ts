@@ -181,6 +181,7 @@ export function getFileCategory(type: HydrusFiletype, hydrusVersion?: number): F
     HydrusFiletype.IMAGE_HEIC_SEQUENCE,
     HydrusFiletype.IMAGE_AVIF,
     HydrusFiletype.IMAGE_AVIF_SEQUENCE,
+    HydrusFiletype.IMAGE_JXL
   ].includes(type)) {
     return FileCategory.Image;
   }

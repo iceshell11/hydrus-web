@@ -56,6 +56,7 @@ export function canOpenInPhotopea(file: HydrusBasicFile) {
     HydrusFiletype.IMAGE_ICON,
     HydrusFiletype.APPLICATION_KRITA,
     HydrusFiletype.IMAGE_SVG,
+    HydrusFiletype.IMAGE_JXL
   ].includes(file.file_type)
 }
 
