@@ -689,7 +689,15 @@ const renderableFiletypes596 = [
   HydrusFiletype.ANIMATION_UGOIRA
 ]
 
+const renderableFiletypes607 = [
+  ...renderableFiletypes596,
+  HydrusFiletype.IMAGE_JXL
+]
+
 export function isFileHydrusRenderable(mime: HydrusFiletype, hydrusVersion?: number) {
+  if(hydrusVersion && hydrusVersion >= 607) {
+    return renderableFiletypes607.includes(mime);
+  }
   if(hydrusVersion && hydrusVersion >= 596) {
     return renderableFiletypes596.includes(mime);
   }

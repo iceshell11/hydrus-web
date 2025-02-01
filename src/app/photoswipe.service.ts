@@ -256,35 +256,7 @@ export class PhotoswipeService {
         errorMsgText.className = 'pswp-error-text';
         errorMsgEl.appendChild(errorMsgText);
 
-        const renderButton = document.createElement('button');
-        renderButton.setAttribute('mat-stroked-button', '');
-        const psdButtonComponent = createComponent(MatButton, {
-          environmentInjector: this.injector,
-          hostElement: renderButton,
-          projectableNodes: [
-            [document.createTextNode('Load render from Hydrus')]
-          ]
-        })
-
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'pswp-error-text';
-        errorMsgEl.appendChild(buttonContainer);
-        buttonContainer.appendChild(renderButton);
-        this.appRef.attachView(psdButtonComponent.hostView);
-
-        renderButton.addEventListener('click', async (ev) => {
-          psdButtonComponent.setInput('disabled', true);
-          const data = {
-            type: 'image',
-            src: file.render_url,
-            msrc: file.thumbnail_url,
-            width: file.width,
-            height: file.height,
-            file
-          }
-          this.processedFiles.set(file.hash, data);
-          pswp.refreshSlideContent(content.index);
-        })
+        this.addRenderButton(file, errorMsgEl, pswp, content);
 
         this.addPhotopeaButton(file, errorMsgEl);
 
@@ -368,6 +340,10 @@ export class PhotoswipeService {
       errorMsgText.innerText = `The file cannot be loaded (${file.file_type_string})`;
       errorMsgText.className = 'pswp-error-text';
       errorMsgEl.appendChild(errorMsgText);
+
+      if(file.render_url) {
+        this.addRenderButton(file, errorMsgEl, pswp, content);
+      }
 
       return errorMsgEl;
     });
@@ -468,7 +444,7 @@ export class PhotoswipeService {
     }
   }
 
-  addPhotopeaButton(file: HydrusBasicFile, element: HTMLElement) {
+  private addPhotopeaButton(file: HydrusBasicFile, element: HTMLElement) {
     if(canOpenInPhotopea(file) && this.settingsService.appSettings.photopeaIntegration) {
       const photopeaButton = document.createElement('a');
       photopeaButton.setAttribute('mat-stroked-button', '');
@@ -490,6 +466,38 @@ export class PhotoswipeService {
 
       this.appRef.attachView(photopeaButtonComponent.hostView);
     }
+  }
+
+  private addRenderButton(file: HydrusBasicFile, element: HTMLElement, pswp: PhotoSwipe, content: Content) {
+    const renderButton = document.createElement('button');
+      renderButton.setAttribute('mat-stroked-button', '');
+      const psdButtonComponent = createComponent(MatButton, {
+        environmentInjector: this.injector,
+        hostElement: renderButton,
+        projectableNodes: [
+          [document.createTextNode('Load render from Hydrus')]
+        ]
+      })
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'pswp-error-text';
+      element.appendChild(buttonContainer);
+      buttonContainer.appendChild(renderButton);
+      this.appRef.attachView(psdButtonComponent.hostView);
+
+      renderButton.addEventListener('click', async (ev) => {
+        psdButtonComponent.setInput('disabled', true);
+        const data = {
+          type: 'image',
+          src: file.render_url,
+          msrc: file.thumbnail_url,
+          width: file.width,
+          height: file.height,
+          file
+        }
+        this.processedFiles.set(file.hash, data);
+        pswp.refreshSlideContent(content.index);
+      })
   }
 
 }

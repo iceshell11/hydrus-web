@@ -32,8 +32,7 @@ export class ThemeTagsService {
       filter(options => !!options?.old_options?.namespace_colours),
       map(options => options.old_options.namespace_colours),
       distinctUntilChanged(dequal),
-      switchMap(namespace_colours => this.setThemeFromNamespaceColors(namespace_colours))
-    ).subscribe()
+    ).subscribe(namespace_colours => this.setThemeFromNamespaceColors(namespace_colours))
 
   }
 

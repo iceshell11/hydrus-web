@@ -25,13 +25,11 @@ export class ThemeService {
     document.adoptedStyleSheets.push(this.themeStylesheet);
     this.settings.appSettings$.pipe(
       filter(settings => settings.themeEnabled),
-      switchMap(settings => this.setThemeFromHexColor(settings.themeColor, settings.themeVariant))
-    ).subscribe()
+    ).subscribe(settings => this.setThemeFromHexColor(settings.themeColor, settings.themeVariant))
 
     this.settings.appSettings$.pipe(
       filter(settings => !settings.themeEnabled),
-      switchMap(() => this.removeTheme())
-    ).subscribe()
+    ).subscribe(() => this.removeTheme())
   }
 
   async setThemeFromHexColor(color: string, variant: SettingsThemeVariant = SettingsThemeVariant.DEFAULT) {
