@@ -384,6 +384,7 @@ export class PhotoswipeService {
     });
 
     pswp.on('close', () => {
+      handleDestroyMedia(pswp.currSlide.content);
       this.themeService.removeBlackThemeColorMetaTag();
       locSub.unsubscribe();
       if(window.history.state.pswp) {
