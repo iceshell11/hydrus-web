@@ -3,6 +3,7 @@ import { HydrusURLInfo } from './hydrus-url';
 import { HydrusFiletype, isFileHydrusRenderable } from './hydrus-file-mimes'
 import { HydrusIncDecRatingValue, HydrusLikeRatingValue, HydrusNumericalRatingValue, HydrusRating, isIncDecRatingService, isLikeRatingService, isNumericalRatingService } from './hydrus-rating';
 import { HydrusServiceType, HydrusServices } from './hydrus-services';
+import { HydrusCanvasType } from './hydrus-api';
 
 export interface ServiceNamesToStatusesToTags {
   [service: string]: StatusesToTags;
@@ -95,7 +96,18 @@ export interface HydrusFileFromAPI extends HydrusBasicFileFromAPI {
 
   time_modified_details?: Record<string, number>; // added in v506
 
+  file_viewing_statistics: FileViewingStatisticsEntry[] // added in v607
+
   is_deleted?: boolean; // added in v506
+}
+
+
+interface FileViewingStatisticsEntry {
+  canvas_type: HydrusCanvasType
+  canvas_type_pretty: string
+  views: number
+  viewtime: number
+  last_viewed_timestamp: string | null
 }
 
 

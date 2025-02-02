@@ -13,6 +13,7 @@ import { canOpenInPhotopea, getPhotopeaUrlForFile } from './photopea';
 import { SettingsService } from './settings.service';
 import { MatButton } from '@angular/material/button';
 import { ThemeService } from './theme/theme.service';
+import { HydrusViewsService } from './hydrus-views.service';
 
 
 function isContentType(content: Content | Slide, type: string) {
@@ -32,12 +33,28 @@ export class PhotoswipeService {
     private settingsService: SettingsService,
     private appRef: ApplicationRef,
     private injector: EnvironmentInjector,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private viewsService: HydrusViewsService
   ) { }
 
   private processedFiles = new Map<string, SlideData>();
 
   openPhotoSwipe(items: HydrusBasicFile[], id: number) {
+    let viewStartTimestamp = Date.now();
+    let lastFile: HydrusBasicFile | undefined;
+
+    const handleView = (file?: HydrusBasicFile) => {
+      if(!this.settingsService.appSettings.sendViews) {
+        return;
+      }
+      if(lastFile && lastFile.hash !== file?.hash) {
+        const currentTimestamp = Date.now();
+        this.viewsService.submitView(lastFile, viewStartTimestamp, currentTimestamp);
+        viewStartTimestamp = currentTimestamp;
+      }
+      lastFile = file;
+    }
+
     this.themeService.addBlackThemeColorMetaTag();
 
     const imgindex = items.findIndex(e => e.file_id === id);
@@ -287,6 +304,7 @@ export class PhotoswipeService {
     });
 
     pswp.on('contentActivate', ({content}) => {
+      handleView(content.data.file);
       if (isContentType(content, 'video') && content.element) {
         const file = content.data.file as HydrusBasicFile;
         const vid = document.createElement('video');
@@ -384,6 +402,7 @@ export class PhotoswipeService {
     });
 
     pswp.on('close', () => {
+      handleView();
       handleDestroyMedia(pswp.currSlide.content);
       this.themeService.removeBlackThemeColorMetaTag();
       locSub.unsubscribe();

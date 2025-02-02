@@ -22,6 +22,7 @@ export interface AppSettingsV1 {
   themeEnabled: boolean;
   themeColor: string;
   themeVariant: SettingsThemeVariant;
+  sendViews: boolean;
 }
 
 export type AppSettingsStorage = AppSettingsV1;
@@ -46,5 +47,6 @@ export const defaultAppSettings: AppSettings = {
   mediaDefaultMuted: false,
   themeEnabled: false,
   themeColor: '#3f51b5',
-  themeVariant: SettingsThemeVariant.DEFAULT
+  themeVariant: SettingsThemeVariant.DEFAULT,
+  sendViews: true,
 }

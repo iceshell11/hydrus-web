@@ -11,7 +11,7 @@ import { HydrusVersionResponse } from './hydrus-version';
 import { HydrusNoteImportConflicts } from './hydrus-notes';
 import { HydrusApiSettingsService } from './hydrus-api-settings.service';
 import { HydrusAddFileResponse } from './hydrus-upload.service';
-import { HydrusKeyVerificationData, HydrusRequestFileDomain, HydrusRequestFiles, HydrusRequestSingleFile } from './hydrus-api';
+import { HydrusIncrementOrSetViewtimeRequest, HydrusKeyVerificationData, HydrusRequestFileDomain, HydrusRequestFiles, HydrusRequestSingleFile } from './hydrus-api';
 import { HydrusJobStatus, HydrusJobStatusAddRequest, HydrusJobStatusUpdateRequest } from './hydrus-job-status';
 import { HydrusPage, HydrusPageListItem } from './hydrus-page';
 import { HydrusClientOptions } from './hydrus-client-options';
@@ -505,6 +505,10 @@ export class HydrusApiService {
 
   public getClientOptions() {
     return this.apiGet<HydrusClientOptions & {services: HydrusServices}>('manage_database/get_client_options');
+  }
+
+  public incrementFileViewtime(data: HydrusIncrementOrSetViewtimeRequest) {
+    return this.apiPost<void>('edit_times/increment_file_viewtime', data)
   }
 
 
