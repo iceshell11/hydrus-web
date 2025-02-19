@@ -22,6 +22,13 @@ export enum HydrusSortType {
   LastViewedTime = 18,
   ArchivedTimestamp = 19,
   Hash = 20,
+  PixelHash = 21,
+  Blurhash = 22,
+  AverageColourLightness = 23,
+  AverageColourChromaticMagnitude = 24,
+  AverageColourChromaticityGreenRed = 25,
+  AverageColourChromaticityBlueYellow = 26,
+  AverageColourHue = 27,
 }
 
 const SORT_FILES_BY_FILESIZE = HydrusSortType.FileSize,
@@ -44,7 +51,14 @@ SORT_FILES_BY_NUM_FRAMES = HydrusSortType.NumFrames,
 SORT_FILES_BY_NUM_COLLECTION_FILES = HydrusSortType.NumCollectionFiles,
 SORT_FILES_BY_LAST_VIEWED_TIME = HydrusSortType.LastViewedTime,
 SORT_FILES_BY_ARCHIVED_TIMESTAMP = HydrusSortType.ArchivedTimestamp,
-SORT_FILES_BY_HASH = HydrusSortType.Hash;
+SORT_FILES_BY_HASH = HydrusSortType.Hash,
+SORT_FILES_BY_PIXEL_HASH = HydrusSortType.PixelHash,
+SORT_FILES_BY_BLURHASH = HydrusSortType.Blurhash,
+SORT_FILES_BY_AVERAGE_COLOUR_LIGHTNESS = HydrusSortType.AverageColourLightness,
+SORT_FILES_BY_AVERAGE_COLOUR_CHROMATIC_MAGNITUDE = HydrusSortType.AverageColourChromaticMagnitude,
+SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_GREEN_RED = HydrusSortType.AverageColourChromaticityGreenRed,
+SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_BLUE_YELLOW = HydrusSortType.AverageColourChromaticityBlueYellow,
+SORT_FILES_BY_AVERAGE_COLOUR_HUE = HydrusSortType.AverageColourHue;
 
 
 export enum SortMetaType {
@@ -54,23 +68,31 @@ export enum SortMetaType {
   File = 'file',
   Tags = 'tags',
   Time = 'time',
-  Views = 'views'
+  Views = 'views',
+  AverageColor = 'average color'
 }
 
-// https://github.com/hydrusnetwork/hydrus/blob/6152573676165e933d152817e031000b16e040ad/hydrus/client/media/ClientMedia.py#L3068
+// https://github.com/hydrusnetwork/hydrus/blob/89383614cfb135622a62b0d56999e425cfe366f9/hydrus/client/media/ClientMedia.py#L2248
 function canAsc(sortType: HydrusSortType) {
-  return ![SORT_FILES_BY_MIME, SORT_FILES_BY_RANDOM, SORT_FILES_BY_HASH].includes(sortType);
+  return ![SORT_FILES_BY_MIME, SORT_FILES_BY_RANDOM].includes(sortType);
 }
 
 const sortMetaTypeGroups: Record<SortMetaType, HydrusSortType[]> = {
+  [SortMetaType.AverageColor]: [
+    SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_BLUE_YELLOW,
+    SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_GREEN_RED,
+    SORT_FILES_BY_AVERAGE_COLOUR_CHROMATIC_MAGNITUDE,
+    SORT_FILES_BY_AVERAGE_COLOUR_HUE,
+    SORT_FILES_BY_AVERAGE_COLOUR_LIGHTNESS,
+  ],
   [SortMetaType.Collections]: [
     SORT_FILES_BY_NUM_COLLECTION_FILES
   ],
   [SortMetaType.Dimensions]: [
     SORT_FILES_BY_HEIGHT,
     SORT_FILES_BY_WIDTH,
-    SORT_FILES_BY_RATIO,
     SORT_FILES_BY_NUM_PIXELS,
+    SORT_FILES_BY_RATIO,
   ],
   [SortMetaType.Duration]: [
     SORT_FILES_BY_DURATION,
@@ -78,18 +100,20 @@ const sortMetaTypeGroups: Record<SortMetaType, HydrusSortType[]> = {
     SORT_FILES_BY_NUM_FRAMES
   ],
   [SortMetaType.File]: [
+    SORT_FILES_BY_APPROX_BITRATE,
     SORT_FILES_BY_FILESIZE,
     SORT_FILES_BY_MIME,
+    SORT_FILES_BY_HAS_AUDIO,
     SORT_FILES_BY_HASH,
-    SORT_FILES_BY_APPROX_BITRATE,
-    SORT_FILES_BY_HAS_AUDIO
+    SORT_FILES_BY_PIXEL_HASH,
+    SORT_FILES_BY_BLURHASH,
   ],
   [SortMetaType.Tags]: [
     SORT_FILES_BY_NUM_TAGS
   ],
   [SortMetaType.Time]: [
-    SORT_FILES_BY_IMPORT_TIME,
     SORT_FILES_BY_ARCHIVED_TIMESTAMP,
+    SORT_FILES_BY_IMPORT_TIME,
     SORT_FILES_BY_LAST_VIEWED_TIME,
     SORT_FILES_BY_FILE_MODIFIED_TIMESTAMP
   ],
@@ -106,6 +130,11 @@ const sort_type_basic_string_lookup: Record<HydrusSortType, string> = {
   [SORT_FILES_BY_HEIGHT] : 'height',
   [SORT_FILES_BY_NUM_COLLECTION_FILES] : 'number of files in collection',
   [SORT_FILES_BY_NUM_PIXELS] : 'number of pixels',
+  [SORT_FILES_BY_AVERAGE_COLOUR_LIGHTNESS] : 'lightness',
+  [SORT_FILES_BY_AVERAGE_COLOUR_CHROMATIC_MAGNITUDE] : 'chromatic magnitude',
+  [SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_GREEN_RED] : 'balance - green-red',
+  [SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_BLUE_YELLOW] : 'balance - blue-yellow',
+  [SORT_FILES_BY_AVERAGE_COLOUR_HUE] : 'hue',
   [SORT_FILES_BY_RATIO] : 'resolution ratio',
   [SORT_FILES_BY_WIDTH] : 'width',
   [SORT_FILES_BY_APPROX_BITRATE] : 'approximate bitrate',
@@ -117,10 +146,12 @@ const sort_type_basic_string_lookup: Record<HydrusSortType, string> = {
   [SORT_FILES_BY_ARCHIVED_TIMESTAMP] : 'archived time',
   [SORT_FILES_BY_LAST_VIEWED_TIME] : 'last viewed time',
   [SORT_FILES_BY_RANDOM] : 'random',
-  [SORT_FILES_BY_HASH] : 'hash',
+  [SORT_FILES_BY_HASH] : 'hash - sha256',
+  [SORT_FILES_BY_PIXEL_HASH] : 'hash - pixel hash',
+  [SORT_FILES_BY_BLURHASH] : 'hash - blurhash',
   [SORT_FILES_BY_NUM_TAGS] : 'number of tags',
   [SORT_FILES_BY_MEDIA_VIEWS] : 'media views',
-  [SORT_FILES_BY_MEDIA_VIEWTIME] : 'media viewtime'
+  [SORT_FILES_BY_MEDIA_VIEWTIME] : 'media viewtime',
 }
 
 const SORT_ASC = true, SORT_DESC = false;
@@ -139,7 +170,14 @@ const sort_string_lookup: Record<HydrusSortType, [string, string, boolean]> = {
   [ SORT_FILES_BY_ARCHIVED_TIMESTAMP ] : [ 'oldest first', 'newest first', SORT_DESC ],
   [ SORT_FILES_BY_MIME ] : [ 'filetype', 'filetype', SORT_ASC ],
   [ SORT_FILES_BY_RANDOM ] : [ 'random', 'random', SORT_ASC ],
-  [ SORT_FILES_BY_HASH ] : [ 'hash', 'hash', SORT_ASC ],
+  [ SORT_FILES_BY_HASH ] : [ 'lexicographic', 'reverse lexicographic', SORT_ASC ],
+  [ SORT_FILES_BY_PIXEL_HASH ] : [ 'lexicographic', 'reverse lexicographic', SORT_ASC ],
+  [ SORT_FILES_BY_BLURHASH ] : [ 'lexicographic', 'reverse lexicographic', SORT_ASC ],
+  [ SORT_FILES_BY_AVERAGE_COLOUR_LIGHTNESS ] : [ 'darkest first', 'lightest first', SORT_ASC ],
+  [ SORT_FILES_BY_AVERAGE_COLOUR_CHROMATIC_MAGNITUDE ] : [ 'greys first', 'colours first', SORT_ASC ],
+  [ SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_GREEN_RED ] : [ 'greens first', 'reds first', SORT_ASC ],
+  [ SORT_FILES_BY_AVERAGE_COLOUR_CHROMATICITY_BLUE_YELLOW ] : [ 'blues first', 'yellows first', SORT_ASC ],
+  [ SORT_FILES_BY_AVERAGE_COLOUR_HUE ] : [ 'rainbow - red first', 'rainbow - purple first', SORT_ASC ],
   [ SORT_FILES_BY_WIDTH ] : [ 'slimmest first', 'widest first', SORT_ASC ],
   [ SORT_FILES_BY_HEIGHT ] : [ 'shortest first', 'tallest first', SORT_ASC ],
   [ SORT_FILES_BY_RATIO ] : [ 'tallest first', 'widest first', SORT_ASC ],
@@ -181,6 +219,7 @@ function processMetaTypeGroup(metaType: SortMetaType): DisplaySortMetaTypeGroup 
 }
 
 export const displaySortGroups = [
+  processMetaTypeGroup(SortMetaType.AverageColor),
   processMetaTypeGroup(SortMetaType.Dimensions),
   processMetaTypeGroup(SortMetaType.Duration),
   processMetaTypeGroup(SortMetaType.File),
