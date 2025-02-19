@@ -301,6 +301,12 @@ mat-icon.mat-mdc-card-avatar {
   font-size: 40px;
 }
 
+// https://github.com/angular/components/issues/30487
+// https://github.com/angular/components/pull/30490
+.mdc-switch__icons {
+  // Works around a rendering issue in Safari 18.3 (see #30487).
+  transform: translateZ(0);
+}
 
 .theming {
   // restores old behavior that was set on each dialog container element

@@ -88,11 +88,13 @@
         <div matListItemLine>Trident</div>
       }
       @if (platform.WEBKIT) {
-        <div matListItemLine>WebKit</div>
+        <div matListItemLine>WebKit
+          @if (platform.SAFARI) {
+            (Safari)
+          }
+        </div>
       }
-      @if (platform.SAFARI) {
-        <div matListItemLine>Safari</div>
-      }
+
     </mat-list-item>
     <a mat-list-item role="listitem" href="/ngsw/state">
       <div matListItemTitle>Service Worker</div>
