@@ -24,3 +24,20 @@ export type HydrusRequestFileDomain = {
   deleted_file_service_key?: string,
   deleted_file_service_keys?: string[]
 }
+
+
+export enum HydrusCanvasType {
+  CANVAS_MEDIA_VIEWER = 0,
+  CANVAS_PREVIEW = 1,
+  CANVAS_MEDIA_VIEWER_DUPLICATES = 2,
+  CANVAS_MEDIA_VIEWER_ARCHIVE_DELETE = 3,
+  CANVAS_CLIENT_API = 4
+}
+
+export type HydrusIncrementOrSetViewtimeRequest = {
+  canvas_type: HydrusCanvasType,
+  views?: number
+  timestamp?: number
+  timestamp_ms?: number
+  viewtime: number
+} & HydrusRequestFiles
