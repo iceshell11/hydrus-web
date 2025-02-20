@@ -55,7 +55,7 @@ export class ErrorService {
   }
 
   handleHydrusHttpError(error: HttpErrorResponse, message = 'Error') {
-    if(typeof error.error === 'object' && 'error' in error.error) {
+    if(error.error && typeof error.error === 'object' && 'error' in error.error) {
       const hydrusError: HydrusError = error.error;
       const errorString = hydrusError.error.split('\n')[0];
       return this.displayError(error, message, errorString);
@@ -65,7 +65,7 @@ export class ErrorService {
   }
 
   handleHydrusError(error: HttpErrorResponse | Error | unknown, message = 'Error') {
-    if(!(error instanceof HttpErrorResponse)) {
+    if(!error || !(error instanceof HttpErrorResponse)) {
       return this.handleError(error);
     } else {
       return this.handleHydrusHttpError(error, message);
