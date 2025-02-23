@@ -213,13 +213,10 @@ export class PhotoswipeService {
           pswp.on('zoomPanUpdate', (e) => {
             if (e.slide === pswp.currSlide) {
               if(pswp.currSlide.isZoomable()) {
-                const pixelRatioZoom = window.devicePixelRatio && window.devicePixelRatio === 1 ? '' :
-                  ` (${Math.round(pswp.currSlide.currZoomLevel * window.devicePixelRatio * 100)}%)`;
-                el.innerText = `${Math.round(pswp.currSlide.currZoomLevel * 100)}%${pixelRatioZoom}`;
+                el.innerText = `${Math.round(pswp.currSlide.currZoomLevel * (window.devicePixelRatio ?? 1) * 100)}%`;
               } else {
                 el.innerText = '';
               }
-
             }
           });
         }
