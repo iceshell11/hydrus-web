@@ -8,6 +8,8 @@ import { PagesComponent } from '../pages/pages.component';
 import { MatLegacySnackBar as MatSnackBar } from '@angular/material/legacy-snack-bar';
 import { HydrusVersionService } from '../hydrus-version.service';
 import { ErrorService } from '../error.service';
+import { SettingsService } from '../settings.service';
+import { FormControl } from '@angular/forms';
 
 @UntilDestroy()
 @Component({
@@ -25,7 +27,8 @@ export class FilesPageComponent implements OnInit {
     public pagesService: HydrusPagesService,
     private snackbar: MatSnackBar,
     private versionService: HydrusVersionService,
-    private errorService: ErrorService
+    private errorService: ErrorService,
+    private settingsService: SettingsService
   ) { }
 
   loadSub: Subscription;
@@ -34,6 +37,7 @@ export class FilesPageComponent implements OnInit {
   public refreshPageButton$: Subject<boolean> = new Subject();
 
   public canRefreshInHydrus$ = this.versionService.isAtLeastVersion(512);
+  public stereoModeControl = new FormControl<boolean>(this.settingsService.appSettings.stereoMode);
 
   load() {
     this.loadSub?.unsubscribe();
@@ -59,8 +63,16 @@ export class FilesPageComponent implements OnInit {
       })
     }, (error) => {
       this.errorService.handleHydrusError(error, 'Error refreshing page');
-    })
+    });
 
+    // Subscribe to stereo mode toggle changes and update settings
+    this.stereoModeControl.valueChanges.pipe(
+      untilDestroyed(this)
+    ).subscribe(value => {
+      if (value !== null) {
+        this.settingsService.setAppSettings({ stereoMode: value as boolean });
+      }
+    });
   }
 
 

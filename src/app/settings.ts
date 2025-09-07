@@ -19,6 +19,7 @@ export interface AppSettingsV1 {
   mediaAutoplay: boolean;
   mediaLoop: boolean;
   mediaDefaultMuted: boolean;
+  stereoMode: boolean;
 }
 
 export type AppSettingsStorage = AppSettingsV1;
@@ -41,4 +42,5 @@ export const defaultAppSettings: AppSettings = {
   mediaAutoplay: true,
   mediaLoop: true,
   mediaDefaultMuted: false,
+  stereoMode: false,
 }

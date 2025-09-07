@@ -23,6 +23,7 @@
   <app-toolbar-actions>
     <span class="mat-small toolbar-count">{{searchTotal$ | async}}</span>
     <button type="button" mat-icon-button aria-label="Refresh" (click)="refresh$.next($event)"><mat-icon>refresh</mat-icon></button>
+    <mat-slide-toggle [formControl]="stereoModeControl" class="stereo-toggle">3D</mat-slide-toggle>
     <button mat-icon-button [matMenuTriggerFor]="sortMenu" aria-label="Sort">
       <mat-icon>sort</mat-icon>
     </button>

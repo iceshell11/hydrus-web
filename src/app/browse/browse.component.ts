@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit, ChangeDetectionStrategy, OnDestroy } 
 import { SearchService } from '../search.service';
 import { HydrusFilesService } from '../hydrus-files.service';
 import { BehaviorSubject, catchError, combineLatest, filter, map, Observable, of, shareReplay, Subject, switchMap, tap } from 'rxjs';
-import { UntilDestroy } from '@ngneat/until-destroy';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { SettingsService } from '../settings.service';
 import { HydrusSearchTags } from '../hydrus-tags';
 import { defaultSort, displaySortGroups, HydrusSortType, isDisplaySortMetaTypeGroup, isDisplaySortType, SortInfo, sortToString } from '../hydrus-sort';
@@ -30,6 +30,7 @@ export class BrowseComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   tagsFormControl = new FormControl<HydrusSearchTags>([]);
+  stereoModeControl = new FormControl<boolean>(this.settingsService.appSettings.stereoMode);
 
   searchTags$ = this.tagsFormControl.valueChanges.pipe(
     shareReplay(1)
@@ -85,6 +86,15 @@ export class BrowseComponent implements OnInit, AfterViewInit, OnDestroy {
         this.tagsFormControl.setValue(this.settingsService.appSettings.browseDefaultSearchTags);
       }
       this.firstParams = false;
+    });
+
+    // Subscribe to stereo mode toggle changes and update settings
+    this.stereoModeControl.valueChanges.pipe(
+      untilDestroyed(this)
+    ).subscribe(value => {
+      if (value !== null) {
+        this.settingsService.setAppSettings({ stereoMode: value as boolean });
+      }
     });
   }
 

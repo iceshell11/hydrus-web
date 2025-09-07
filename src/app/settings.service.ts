@@ -17,6 +17,8 @@ export class SettingsService {
   constructor(private ls: LocalStorageService) {
     const {version, ...settings} = ls.get(appSettingsKey) as AppSettingsStorage | null || {};
     const newSettings = {...defaultAppSettings, ...settings};
+    console.log('Loaded settings:', newSettings);
+    console.log('Stereo mode setting:', newSettings.stereoMode);
     this._appSettings$ = new BehaviorSubject(newSettings);
     this.appSettings$ = this._appSettings$.asObservable();
   }
@@ -32,6 +34,8 @@ export class SettingsService {
 
   public async setAppSettings(newSettings: Partial<AppSettings>) {
     const settings = {...defaultAppSettings, ...newSettings};
+    console.log('Saving settings:', settings);
+    console.log('Stereo mode being saved:', settings.stereoMode);
     this._appSettings$.next(settings);
     this.storeAppSettings({version : 1, ...settings})
   }

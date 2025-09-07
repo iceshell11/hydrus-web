@@ -11,6 +11,7 @@ import { HydrusFileDownloadService } from './hydrus-file-download.service';
 import { take } from 'rxjs';
 import { canOpenInPhotopea, getPhotopeaUrlForFile } from './photopea';
 import { SettingsService } from './settings.service';
+import { StereoMakerService } from './stereo-maker.service';
 import { MatLegacyButton as MatButton } from '@angular/material/legacy-button';
 
 
@@ -29,6 +30,7 @@ export class PhotoswipeService {
     private location: Location,
     private downloadService: HydrusFileDownloadService,
     private settingsService: SettingsService,
+    private stereoMakerService: StereoMakerService,
     private appRef: ApplicationRef,
     private injector: EnvironmentInjector,
 
@@ -219,7 +221,54 @@ export class PhotoswipeService {
       const { content, isLazy } = e;
       const file = content.data.file as HydrusBasicFile;
 
-       if(isContentType(content, 'video')) {
+      if(isContentType(content, 'stereo-image')) {
+        console.log('Detected stereo-image content type, processing...');
+        e.preventDefault();
+        content.state = 'loading';
+
+        console.log('Calling stereo maker API for file:', file.hash);
+        // Generate stereo image
+        this.stereoMakerService.generateStereoImage(file).subscribe({
+          next: (blob) => {
+            console.log('Stereo image generated successfully, size:', blob.size);
+            const stereoUrl = URL.createObjectURL(blob);
+
+            // Create the image element that PhotoSwipe will display
+            const img = new Image();
+            img.src = stereoUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+
+            // Create container element
+            content.element = document.createElement('div');
+            content.element.className = 'pswp__img-container';
+            content.element.appendChild(img);
+
+            // Update content data
+            content.data.src = stereoUrl;
+            content.state = 'loaded';
+
+            img.onload = () => {
+              console.log('Stereo image loaded in DOM');
+              content.onLoaded();
+            };
+            img.onerror = () => {
+              console.error('Failed to load stereo image in DOM');
+              content.state = 'error';
+              content.onError();
+            };
+
+            // Store the blob URL for cleanup
+            content.data.stereoBlobUrl = stereoUrl;
+          },
+          error: (error) => {
+            console.error('Failed to generate stereo image:', error);
+            content.state = 'error';
+            content.onError();
+          }
+        });
+      } else if(isContentType(content, 'video')) {
         e.preventDefault();
 
         content.state = 'loading';
@@ -389,6 +438,11 @@ export class PhotoswipeService {
           media.remove();
         })
       }
+
+      // Clean up stereo image blob URLs
+      if (isContentType(content, 'stereo-image') && content.data?.stereoBlobUrl) {
+        URL.revokeObjectURL(content.data.stereoBlobUrl);
+      }
     }
 
     pswp.on('contentDeactivate', ({content}) => {
@@ -430,13 +484,31 @@ export class PhotoswipeService {
 
     switch(file.file_category) {
       case FileCategory.Image: {
-        return {
-          src: file.file_url,
-          msrc: file.thumbnail_url,
-          width: file.width,
-          height: file.height,
-          file
-        };
+        // Check if stereo mode is enabled and file is supported
+        console.log('Stereo mode enabled:', this.settingsService.appSettings.stereoMode);
+        console.log('File supported for stereo:', this.stereoMakerService.isFileSupported(file));
+        console.log('File type:', file.file_type_string);
+
+        if (this.settingsService.appSettings.stereoMode && this.stereoMakerService.isFileSupported(file)) {
+          console.log('Using stereo mode for file:', file.hash);
+          return {
+            src: 'stereo-placeholder', // Will be replaced with actual blob URL during contentLoad
+            msrc: file.thumbnail_url,
+            width: file.width,
+            height: file.height,
+            file,
+            type: 'stereo-image'
+          };
+        } else {
+          console.log('Using normal mode for file:', file.hash);
+          return {
+            src: file.file_url,
+            msrc: file.thumbnail_url,
+            width: file.width,
+            height: file.height,
+            file
+          };
+        }
       }
       case FileCategory.Video: {
         return {

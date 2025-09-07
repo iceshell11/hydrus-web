@@ -1,0 +1,47 @@
+.stereo-toggle {
+  margin: 0 8px;
+
+  ::ng-deep {
+    .mat-mdc-slide-toggle {
+      height: 40px;
+    }
+
+    .mdc-form-field {
+      align-items: center;
+    }
+
+    .mdc-switch__track {
+      height: 14px;
+      width: 30px;
+      border-radius: 7px;
+    }
+
+    .mdc-switch__handle-track {
+      height: 14px;
+      width: 30px;
+    }
+
+    .mdc-switch__handle {
+      height: 18px;
+      width: 18px;
+      top: 2px;
+    }
+
+    .mdc-switch--selected .mdc-switch__handle {
+      transform: translateX(12px);
+    }
+  }
+}
+
+// Adjust spacing for toolbar items
+::ng-deep .main-toolbar {
+  .mat-toolbar-row,
+  .mat-toolbar-single-row {
+    height: 56px;
+    align-items: center;
+  }
+
+  .toolbar-count {
+    margin-right: 8px;
+  }
+}
