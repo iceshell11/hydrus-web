@@ -28,7 +28,7 @@ export class FilesPageComponent implements OnInit {
     private snackbar: MatSnackBar,
     private versionService: HydrusVersionService,
     private errorService: ErrorService,
-    private settingsService: SettingsService
+    public settingsService: SettingsService
   ) { }
 
   loadSub: Subscription;

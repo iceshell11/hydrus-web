@@ -222,15 +222,12 @@ export class PhotoswipeService {
       const file = content.data.file as HydrusBasicFile;
 
       if(isContentType(content, 'stereo-image')) {
-        console.log('Detected stereo-image content type, processing...');
         e.preventDefault();
         content.state = 'loading';
 
-        console.log('Calling stereo maker API for file:', file.hash);
         // Generate stereo image
         this.stereoMakerService.generateStereoImage(file).subscribe({
           next: (blob) => {
-            console.log('Stereo image generated successfully, size:', blob.size);
             const stereoUrl = URL.createObjectURL(blob);
 
             // Create the image element that PhotoSwipe will display
@@ -250,11 +247,9 @@ export class PhotoswipeService {
             content.state = 'loaded';
 
             img.onload = () => {
-              console.log('Stereo image loaded in DOM');
               content.onLoaded();
             };
             img.onerror = () => {
-              console.error('Failed to load stereo image in DOM');
               content.state = 'error';
               content.onError();
             };
@@ -263,7 +258,6 @@ export class PhotoswipeService {
             content.data.stereoBlobUrl = stereoUrl;
           },
           error: (error) => {
-            console.error('Failed to generate stereo image:', error);
             content.state = 'error';
             content.onError();
           }
@@ -485,12 +479,7 @@ export class PhotoswipeService {
     switch(file.file_category) {
       case FileCategory.Image: {
         // Check if stereo mode is enabled and file is supported
-        console.log('Stereo mode enabled:', this.settingsService.appSettings.stereoMode);
-        console.log('File supported for stereo:', this.stereoMakerService.isFileSupported(file));
-        console.log('File type:', file.file_type_string);
-
         if (this.settingsService.appSettings.stereoMode && this.stereoMakerService.isFileSupported(file)) {
-          console.log('Using stereo mode for file:', file.hash);
           return {
             src: 'stereo-placeholder', // Will be replaced with actual blob URL during contentLoad
             msrc: file.thumbnail_url,
@@ -500,7 +489,6 @@ export class PhotoswipeService {
             type: 'stereo-image'
           };
         } else {
-          console.log('Using normal mode for file:', file.hash);
           return {
             src: file.file_url,
             msrc: file.thumbnail_url,

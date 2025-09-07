@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { HydrusBasicFile } from './hydrus-file';
+import { SettingsService } from './settings.service';
 
 export interface StereoGenerationRequest {
   file: File;
@@ -35,24 +36,27 @@ export interface StereoHealthResponse {
   providedIn: 'root'
 })
 export class StereoMakerService {
-  private readonly apiUrl = 'http://localhost:8007';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private settingsService: SettingsService
+  ) {}
+
+  private get apiUrl(): string {
+    return this.settingsService.appSettings.stereoApiUrl || 'http://localhost:8007';
+  }
 
   /**
    * Generate a stereoscopic image from a Hydrus file
    */
   generateStereoImage(file: HydrusBasicFile, shiftAmount: number = 10, outputFormat: 'png' | 'jpg' | 'jpeg' = 'png'): Observable<Blob> {
-    console.log('Generating stereo image for file:', file.hash, 'type:', file.file_type_string);
     return this.http.get(file.file_url, { responseType: 'blob' }).pipe(
       switchMap(blob => {
-        console.log('Fetched original image blob, size:', blob.size);
         const formData = new FormData();
         formData.append('file', blob, `image.${file.file_type_string.split('/')[1] || 'jpg'}`);
         formData.append('shift_amount', shiftAmount.toString());
         formData.append('output_format', outputFormat);
 
-        console.log('Sending request to stereo API:', `${this.apiUrl}/generate-stereo/`);
         return this.http.post(`${this.apiUrl}/generate-stereo/`, formData, {
           responseType: 'blob'
         });
@@ -104,9 +108,7 @@ export class StereoMakerService {
       'jpg'
     ];
 
-    const isSupported = supportedTypes.some(type => fileType.includes(type));
-    console.log('File type check:', file.file_type_string, 'supported:', isSupported);
-    return isSupported;
+    return supportedTypes.some(type => fileType.includes(type));
   }
 
   private handleError(error: HttpErrorResponse) {
@@ -124,12 +126,7 @@ export class StereoMakerService {
       }
     }
 
-    console.error('Stereo Maker API Error:', {
-      status: error.status,
-      statusText: error.statusText,
-      url: error.url,
-      message: errorMessage
-    });
+    console.error('Stereo Maker API Error:', errorMessage);
     return throwError(() => new Error(errorMessage));
   }
 }
