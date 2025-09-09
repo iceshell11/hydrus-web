@@ -94,6 +94,7 @@ import { RatingIncDecComponent } from './rating-inc-dec/rating-inc-dec.component
 import { TagSiblingsParentsDialogComponent } from './tag-siblings-parents-dialog/tag-siblings-parents-dialog.component';
 import { BlurHashColorPipe } from './blurhash';
 import { VrViewerComponent } from './vr-viewer/vr-viewer.component';
+import { WebxrComponent } from './webxr/webxr.component';
 
 
 const MAT_MODULES = [
@@ -169,6 +170,7 @@ const MAT_MODULES = [
         IsSystemPredicatePipe,
         BlurHashColorPipe,
         VrViewerComponent,
+        WebxrComponent,
     ],
     imports: [
         BrowserModule,

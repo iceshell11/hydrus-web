@@ -1,0 +1,26 @@
+<div #webxrContainer class="webxr-container">
+  <div class="webxr-info" *ngIf="!isInXR">
+    <h2>WebXR Demo</h2>
+    <p>A simple 3D scene with a rotating blue cube.</p>
+
+    <div class="controls">
+      <button (click)="enterVR()" class="xr-btn vr-btn" *ngIf="vrSupported">Enter VR</button>
+      <button (click)="enterAR()" class="xr-btn ar-btn" *ngIf="arSupported">Enter AR</button>
+
+      <div class="no-support" *ngIf="!vrSupported && !arSupported">
+        <p>WebXR not supported in this browser</p>
+        <p>Try using a browser that supports WebXR (Chrome, Edge, Firefox with WebXR flag enabled)</p>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <h3>Instructions:</h3>
+      <ul>
+        <li>Use the buttons above to enter VR or AR mode</li>
+        <li>In VR mode, you'll see the cube in 3D space</li>
+        <li>The cube rotates automatically</li>
+        <li>Use your VR controller or device orientation to look around</li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -8,6 +8,7 @@ import { SendComponent } from './send/send.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { HydrusApiSettingsGuard } from './hydrus-api-settings.guard';
 import { UploadFileComponent } from './upload-file/upload-file.component';
+import { WebxrComponent } from './webxr/webxr.component';
 
 const routes: Routes = [
   {path: '', component: BrowseComponent, pathMatch: 'full', canActivate: [HydrusApiSettingsGuard]},
@@ -17,6 +18,7 @@ const routes: Routes = [
   {path: 'settings', component: SettingsComponent},
   {path: 'about', component: AboutComponent},
   {path: 'welcome', component: WelcomeComponent},
+  {path: 'webxr', component: WebxrComponent},
   {path: '**', redirectTo: '/'}
 ];
 
