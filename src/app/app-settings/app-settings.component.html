@@ -54,10 +54,14 @@
     <h2>Stereo (3D) Images</h2>
     <mat-form-field appearance="outline">
       <mat-label>Stereo Maker API URL</mat-label>
-      <input matInput type="url" autocomplete="off" formControlName="stereoApiUrl" placeholder="http://localhost:8007">
+      <input matInput type="url" autocomplete="off" formControlName="stereoApiUrl">
     </mat-form-field>
 
     <mat-slide-toggle formControlName="stereoButtonVisible" class="margin-bottom-16">Show 3D toggle button in toolbar</mat-slide-toggle>
+
+    <h2>VR (Virtual Reality)</h2>
+    <mat-slide-toggle formControlName="vrMode" class="margin-bottom-16">Enable VR mode (stereoscopic 3D display)</mat-slide-toggle>
+    <mat-slide-toggle formControlName="vrButtonVisible" class="margin-bottom-16">Show VR toggle button in toolbar</mat-slide-toggle>
 
     <div class="button-row">
 

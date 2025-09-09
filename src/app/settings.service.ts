@@ -31,9 +31,9 @@ export class SettingsService {
   }
 
   public async setAppSettings(newSettings: Partial<AppSettings>) {
-    const settings = {...defaultAppSettings, ...newSettings};
+    const settings = {...this.appSettings, ...newSettings};
     this._appSettings$.next(settings);
-    this.storeAppSettings({version : 1, ...settings})
+    await this.storeAppSettings({version : 1, ...settings});
   }
 
 

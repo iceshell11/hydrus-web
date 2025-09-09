@@ -38,6 +38,7 @@ export class FilesPageComponent implements OnInit {
 
   public canRefreshInHydrus$ = this.versionService.isAtLeastVersion(512);
   public stereoModeControl = new FormControl<boolean>(this.settingsService.appSettings.stereoMode);
+  public vrModeControl = new FormControl<boolean>(this.settingsService.appSettings.vrMode);
 
   load() {
     this.loadSub?.unsubscribe();
@@ -71,6 +72,15 @@ export class FilesPageComponent implements OnInit {
     ).subscribe(value => {
       if (value !== null) {
         this.settingsService.setAppSettings({ stereoMode: value as boolean });
+      }
+    });
+
+    // Subscribe to VR mode toggle changes and update settings
+    this.vrModeControl.valueChanges.pipe(
+      untilDestroyed(this)
+    ).subscribe(value => {
+      if (value !== null) {
+        this.settingsService.setAppSettings({ vrMode: value as boolean });
       }
     });
   }

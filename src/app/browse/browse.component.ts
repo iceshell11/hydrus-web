@@ -31,6 +31,7 @@ export class BrowseComponent implements OnInit, AfterViewInit, OnDestroy {
 
   tagsFormControl = new FormControl<HydrusSearchTags>([]);
   stereoModeControl = new FormControl<boolean>(this.settingsService.appSettings.stereoMode);
+  vrModeControl = new FormControl<boolean>(this.settingsService.appSettings.vrMode);
 
   searchTags$ = this.tagsFormControl.valueChanges.pipe(
     shareReplay(1)
@@ -94,6 +95,15 @@ export class BrowseComponent implements OnInit, AfterViewInit, OnDestroy {
     ).subscribe(value => {
       if (value !== null) {
         this.settingsService.setAppSettings({ stereoMode: value as boolean });
+      }
+    });
+
+    // Subscribe to VR mode toggle changes and update settings
+    this.vrModeControl.valueChanges.pipe(
+      untilDestroyed(this)
+    ).subscribe(value => {
+      if (value !== null) {
+        this.settingsService.setAppSettings({ vrMode: value as boolean });
       }
     });
   }

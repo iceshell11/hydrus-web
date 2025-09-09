@@ -22,6 +22,8 @@ export interface AppSettingsV1 {
   stereoMode: boolean;
   stereoApiUrl: string;
   stereoButtonVisible: boolean;
+  vrMode: boolean;
+  vrButtonVisible: boolean;
 }
 
 export type AppSettingsStorage = AppSettingsV1;
@@ -45,6 +47,8 @@ export const defaultAppSettings: AppSettings = {
   mediaLoop: true,
   mediaDefaultMuted: false,
   stereoMode: false,
-  stereoApiUrl: 'http://localhost:8007',
+  stereoApiUrl: '',
   stereoButtonVisible: true,
+  vrMode: false,
+  vrButtonVisible: true,
 }

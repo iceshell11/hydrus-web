@@ -1,0 +1,7 @@
+<div #vrContainer class="vr-container">
+  <div class="vr-info" *ngIf="!isInVR">
+    <p>Click "Enter VR" to view the stereoscopic image in 3D</p>
+    <button (click)="enterVR()" class="enter-vr-btn" *ngIf="vrSupported">Enter VR</button>
+    <p class="no-vr-support" *ngIf="!vrSupported">VR not supported in this browser</p>
+  </div>
+</div>

@@ -3,6 +3,7 @@
   <span class="mat-small toolbar-count">{{this.pageInfo?.media?.num_files}}</span>
   <button type="button" mat-icon-button aria-label="Refresh" (click)="refreshButton$.next(null)"><mat-icon>refresh</mat-icon></button>
   <mat-slide-toggle *ngIf="settingsService.appSettings.stereoButtonVisible" [formControl]="stereoModeControl" class="stereo-toggle">3D</mat-slide-toggle>
+  <mat-slide-toggle *ngIf="settingsService.appSettings.vrButtonVisible" [formControl]="vrModeControl" class="vr-toggle">VR</mat-slide-toggle>
   <button type="button" mat-icon-button [matMenuTriggerFor]="filesPageToolbarmenu">
     <mat-icon>more_vert</mat-icon>
   </button>

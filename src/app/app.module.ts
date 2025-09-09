@@ -93,6 +93,7 @@ import { RatingLikeComponent } from './rating-like/rating-like.component';
 import { RatingIncDecComponent } from './rating-inc-dec/rating-inc-dec.component';
 import { TagSiblingsParentsDialogComponent } from './tag-siblings-parents-dialog/tag-siblings-parents-dialog.component';
 import { BlurHashColorPipe } from './blurhash';
+import { VrViewerComponent } from './vr-viewer/vr-viewer.component';
 
 
 const MAT_MODULES = [
@@ -167,6 +168,7 @@ const MAT_MODULES = [
         TagSiblingsParentsDialogComponent,
         IsSystemPredicatePipe,
         BlurHashColorPipe,
+        VrViewerComponent,
     ],
     imports: [
         BrowserModule,

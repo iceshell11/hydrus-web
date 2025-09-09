@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatLegacySnackBar as MatSnackBar } from '@angular/material/legacy-snack-bar';
-import { map } from 'rxjs';
+import { map, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
 import { HydrusApiSettingsService } from '../hydrus-api-settings.service';
 import { getLocalTagServices } from '../hydrus-services';
 import { HydrusServicesService } from '../hydrus-services.service';
@@ -14,7 +15,9 @@ import { ErrorService } from '../error.service';
   templateUrl: './app-settings.component.html',
   styleUrls: ['./app-settings.component.scss']
 })
-export class AppSettingsComponent implements OnInit {
+export class AppSettingsComponent implements OnInit, OnDestroy {
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private settings: SettingsService,
@@ -25,6 +28,17 @@ export class AppSettingsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    // Subscribe to settings changes and update the form
+    this.settings.appSettings$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(settings => {
+      this.appSettingsForm.patchValue(settings);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   tagServices$ = this.hydrusServices.hydrusServicesArray$.pipe(

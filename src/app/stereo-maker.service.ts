@@ -43,7 +43,7 @@ export class StereoMakerService {
   ) {}
 
   private get apiUrl(): string {
-    return this.settingsService.appSettings.stereoApiUrl || 'http://localhost:8007';
+    return this.settingsService.appSettings.stereoApiUrl;
   }
 
   /**
@@ -120,7 +120,7 @@ export class StereoMakerService {
     } else {
       // Server-side error
       if (error.status === 0) {
-        errorMessage = 'Stereo Maker API is not available. Make sure it\'s running on http://localhost:8007';
+        errorMessage = 'Stereo Maker API is not available. Make sure it\'s running';
       } else {
         errorMessage = `Server error: ${error.status} - ${error.message}`;
       }

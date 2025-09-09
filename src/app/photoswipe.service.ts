@@ -12,6 +12,7 @@ import { take } from 'rxjs';
 import { canOpenInPhotopea, getPhotopeaUrlForFile } from './photopea';
 import { SettingsService } from './settings.service';
 import { StereoMakerService } from './stereo-maker.service';
+import { VrViewerComponent } from './vr-viewer/vr-viewer.component';
 import { MatLegacyButton as MatButton } from '@angular/material/legacy-button';
 
 
@@ -37,6 +38,9 @@ export class PhotoswipeService {
   ) { }
 
   private processedFiles = new Map<string, SlideData>();
+  private stereoCache = new Map<string, Blob>();
+  private stereoLoadingQueue: { file: HydrusBasicFile; priority: number }[] = [];
+  private currentlyLoading = new Set<string>();
 
   openPhotoSwipe(items: HydrusBasicFile[], id: number) {
     const imgindex = items.findIndex(e => e.file_id === id);
@@ -66,7 +70,8 @@ export class PhotoswipeService {
     pswp.addFilter('itemData', (itemData, index) => {
       const file = items[index];
       if(this.processedFiles.has(file.hash)) {
-        return this.processedFiles.get(file.hash);
+        const cachedData = this.processedFiles.get(file.hash);
+        return cachedData;
       }
       return this.getPhotoSwipeItem(items[index]);
     });
@@ -221,47 +226,34 @@ export class PhotoswipeService {
       const { content, isLazy } = e;
       const file = content.data.file as HydrusBasicFile;
 
-      if(isContentType(content, 'stereo-image')) {
+      if(isContentType(content, 'vr-image')) {
         e.preventDefault();
         content.state = 'loading';
 
-        // Generate stereo image
-        this.stereoMakerService.generateStereoImage(file).subscribe({
-          next: (blob) => {
-            const stereoUrl = URL.createObjectURL(blob);
+        const cachedBlob = this.stereoCache.get(file.hash);
+        if (cachedBlob) {
+          // Use cached VR image
+          this.displayCachedVrImage(content, file, cachedBlob);
+        } else {
+          // Queue VR image generation with high priority
+          this.queueStereoGeneration(file, 0); // Priority 0 = highest
+          // Generate immediately for display
+          this.generateAndCacheVrImage(content, file);
+        }
+      } else if(isContentType(content, 'stereo-image')) {
+        e.preventDefault();
+        content.state = 'loading';
 
-            // Create the image element that PhotoSwipe will display
-            const img = new Image();
-            img.src = stereoUrl;
-            img.style.width = '100%';
-            img.style.height = '100%';
-            img.style.objectFit = 'contain';
-
-            // Create container element
-            content.element = document.createElement('div');
-            content.element.className = 'pswp__img-container';
-            content.element.appendChild(img);
-
-            // Update content data
-            content.data.src = stereoUrl;
-            content.state = 'loaded';
-
-            img.onload = () => {
-              content.onLoaded();
-            };
-            img.onerror = () => {
-              content.state = 'error';
-              content.onError();
-            };
-
-            // Store the blob URL for cleanup
-            content.data.stereoBlobUrl = stereoUrl;
-          },
-          error: (error) => {
-            content.state = 'error';
-            content.onError();
-          }
-        });
+        const cachedBlob = this.stereoCache.get(file.hash);
+        if (cachedBlob) {
+          // Use cached stereo image
+          this.displayCachedStereoImage(content, file, cachedBlob);
+        } else {
+          // Queue stereo image generation with high priority
+          this.queueStereoGeneration(file, 0); // Priority 0 = highest
+          // Generate immediately for display
+          this.generateAndCacheStereoImage(content, file);
+        }
       } else if(isContentType(content, 'video')) {
         e.preventDefault();
 
@@ -357,6 +349,18 @@ export class PhotoswipeService {
 
     });
 
+    // Queue adjacent images when slide changes
+    pswp.on('change', () => {
+      const currentIndex = pswp.currIndex;
+      this.queueAdjacentImages(items, currentIndex);
+    });
+
+    // Queue initial adjacent images when PhotoSwipe opens
+    pswp.on('firstUpdate', () => {
+      const currentIndex = pswp.currIndex;
+      this.queueAdjacentImages(items, currentIndex);
+    });
+
     pswp.on('contentActivate', ({content}) => {
       if (isContentType(content, 'video') && content.element) {
         const file = content.data.file as HydrusBasicFile;
@@ -437,6 +441,16 @@ export class PhotoswipeService {
       if (isContentType(content, 'stereo-image') && content.data?.stereoBlobUrl) {
         URL.revokeObjectURL(content.data.stereoBlobUrl);
       }
+
+      // Clean up VR image blob URLs and components
+      if (isContentType(content, 'vr-image')) {
+        if (content.data?.vrBlobUrl) {
+          URL.revokeObjectURL(content.data.vrBlobUrl);
+        }
+        if (content.data?.vrComponent) {
+          content.data.vrComponent.destroy();
+        }
+      }
     }
 
     pswp.on('contentDeactivate', ({content}) => {
@@ -478,12 +492,23 @@ export class PhotoswipeService {
 
     switch(file.file_category) {
       case FileCategory.Image: {
+        // Check if VR mode is enabled and file is supported (takes priority over stereo)
+        if (this.settingsService.appSettings.vrMode && this.stereoMakerService.isFileSupported(file)) {
+          return {
+            src: 'vr-placeholder', // Will be replaced with actual blob URL during contentLoad
+            msrc: file.thumbnail_url,
+            width: file.width,
+            height: file.height,
+            file,
+            type: 'vr-image'
+          };
+        }
         // Check if stereo mode is enabled and file is supported
-        if (this.settingsService.appSettings.stereoMode && this.stereoMakerService.isFileSupported(file)) {
+        else if (this.settingsService.appSettings.stereoMode && this.stereoMakerService.isFileSupported(file)) {
           return {
             src: 'stereo-placeholder', // Will be replaced with actual blob URL during contentLoad
             msrc: file.thumbnail_url,
-            width: file.width,
+            width: file.width * 2, // Stereo images are side-by-side, so double width
             height: file.height,
             file,
             type: 'stereo-image'
@@ -549,6 +574,257 @@ export class PhotoswipeService {
 
       this.appRef.attachView(photopeaButtonComponent.hostView);
     }
+  }
+
+  /**
+   * Display a cached stereo image
+   */
+  private displayCachedStereoImage(content: Content, file: HydrusBasicFile, blob: Blob) {
+    const stereoUrl = URL.createObjectURL(blob);
+
+    // Create the image element that PhotoSwipe will display
+    const img = new Image();
+    img.src = stereoUrl;
+    img.className = 'stereo-image';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+
+    // Create container element with proper sizing for stereo image
+    content.element = document.createElement('div');
+    content.element.className = 'pswp__img-container';
+    content.element.style.width = '100%';
+    content.element.style.height = '100%';
+    content.element.style.display = 'flex';
+    content.element.style.alignItems = 'center';
+    content.element.style.justifyContent = 'center';
+    content.element.style.backgroundColor = '#000';
+    content.element.appendChild(img);
+
+    // Update content data
+    content.data.src = stereoUrl;
+    content.state = 'loaded';
+
+    img.onload = () => {
+      content.onLoaded();
+    };
+    img.onerror = () => {
+      // If cached image fails to load, try regenerating
+      this.stereoCache.delete(file.hash);
+      this.generateAndCacheStereoImage(content, file);
+    };
+
+    // Store the blob URL for cleanup
+    content.data.stereoBlobUrl = stereoUrl;
+  }
+
+  /**
+   * Generate and cache a new stereo image
+   */
+  private generateAndCacheStereoImage(content: Content, file: HydrusBasicFile) {
+    this.stereoMakerService.generateStereoImage(file).subscribe({
+      next: (blob) => {
+        // Cache the blob for future use
+        this.stereoCache.set(file.hash, blob);
+
+        // Display the generated image
+        this.displayCachedStereoImage(content, file, blob);
+      },
+      error: (error) => {
+        content.state = 'error';
+        content.onError();
+      }
+    });
+  }
+
+  /**
+   * Display a cached VR image
+   */
+  private displayCachedVrImage(content: Content, file: HydrusBasicFile, blob: Blob) {
+    const vrUrl = URL.createObjectURL(blob);
+
+    // Create VR viewer container
+    content.element = document.createElement('div');
+    content.element.className = 'pswp__vr-container';
+    content.element.style.width = '100%';
+    content.element.style.height = '100%';
+    content.element.style.position = 'relative';
+    content.element.style.overflow = 'hidden';
+
+    // Create VR viewer component using Angular's component factory
+    const vrViewer = createComponent(VrViewerComponent, {
+      environmentInjector: this.injector,
+      hostElement: document.createElement('app-vr-viewer')
+    });
+
+    // Set component inputs
+    vrViewer.setInput('imageUrl', vrUrl);
+    vrViewer.setInput('imageWidth', file.width);
+    vrViewer.setInput('imageHeight', file.height);
+
+    // Attach the component to the DOM
+    content.element.appendChild(vrViewer.location.nativeElement);
+    this.appRef.attachView(vrViewer.hostView);
+
+    // Update content data
+    content.data.src = vrUrl;
+    content.state = 'loaded';
+
+    // Store the blob URL and component reference for cleanup
+    content.data.vrBlobUrl = vrUrl;
+    content.data.vrComponent = vrViewer;
+  }
+
+  /**
+   * Generate and cache a new VR image
+   */
+  private generateAndCacheVrImage(content: Content, file: HydrusBasicFile) {
+    this.stereoMakerService.generateStereoImage(file).subscribe({
+      next: (blob) => {
+        // Cache the blob for future use
+        this.stereoCache.set(file.hash, blob);
+
+        // Display the generated VR image
+        this.displayCachedVrImage(content, file, blob);
+      },
+      error: (error) => {
+        content.state = 'error';
+        content.onError();
+      }
+    });
+  }
+
+  /**
+   * Queue stereo image generation with priority
+   */
+  private queueStereoGeneration(file: HydrusBasicFile, priority: number = 0) {
+    // Skip if already cached or currently loading
+    if (this.stereoCache.has(file.hash) || this.currentlyLoading.has(file.hash)) {
+      return;
+    }
+
+    // Check if file is supported
+    if (!this.stereoMakerService.isFileSupported(file)) {
+      return;
+    }
+
+    // Remove existing queue entry if any
+    this.stereoLoadingQueue = this.stereoLoadingQueue.filter(item => item.file.hash !== file.hash);
+
+    // Add to queue with priority
+    this.stereoLoadingQueue.push({ file, priority });
+
+    // Sort by priority (lower number = higher priority)
+    this.stereoLoadingQueue.sort((a, b) => a.priority - b.priority);
+
+    // Start processing if not already doing so
+    this.processQueue();
+  }
+
+  /**
+   * Process the stereo loading queue
+   */
+  private processQueue() {
+    // If already processing max concurrent requests, return
+    if (this.currentlyLoading.size >= 2) { // Allow 2 concurrent requests
+      return;
+    }
+
+    // Find next item to process
+    const nextItem = this.stereoLoadingQueue.shift();
+    if (!nextItem) {
+      return;
+    }
+
+    const { file } = nextItem;
+    this.currentlyLoading.add(file.hash);
+
+    // Generate stereo image
+    this.stereoMakerService.generateStereoImage(file).subscribe({
+      next: (blob) => {
+        // Cache the blob
+        this.stereoCache.set(file.hash, blob);
+        this.currentlyLoading.delete(file.hash);
+
+        // Process next item in queue
+        this.processQueue();
+      },
+      error: (error) => {
+        console.error('Failed to generate stereo image for queued file:', file.hash);
+        this.currentlyLoading.delete(file.hash);
+
+        // Process next item in queue even on error
+        this.processQueue();
+      }
+    });
+  }
+
+  /**
+   * Clear the stereo/VR image cache
+   */
+  clearStereoCache() {
+    this.stereoCache.forEach(blob => {
+      // Note: We don't revoke blob URLs here as they might still be in use
+      // The browser will clean them up when they are no longer referenced
+    });
+    this.stereoCache.clear();
+    this.stereoLoadingQueue = [];
+    this.currentlyLoading.clear();
+  }
+
+  /**
+   * Queue adjacent images with proper priorities
+   */
+  private queueAdjacentImages(items: HydrusBasicFile[], currentIndex: number) {
+    const maxDistance = 5; // Queue images within 5 positions of current
+    const totalItems = items.length;
+
+    for (let distance = 1; distance <= maxDistance; distance++) {
+      // Queue next image
+      const nextIndex = (currentIndex + distance) % totalItems;
+      const nextFile = items[nextIndex];
+      if (this.isStereoOrVrImage(nextFile)) {
+        this.queueStereoGeneration(nextFile, distance); // Priority based on distance
+      }
+
+      // Queue previous image
+      const prevIndex = (currentIndex - distance + totalItems) % totalItems;
+      const prevFile = items[prevIndex];
+      if (this.isStereoOrVrImage(prevFile)) {
+        this.queueStereoGeneration(prevFile, distance); // Priority based on distance
+      }
+    }
+  }
+
+  /**
+   * Check if file is a stereo or VR image that needs processing
+   */
+  private isStereoOrVrImage(file: HydrusBasicFile): boolean {
+    if (!this.stereoMakerService.isFileSupported(file)) {
+      return false;
+    }
+
+    const settings = this.settingsService.appSettings;
+    return (settings.stereoMode && this.stereoMakerService.isFileSupported(file)) ||
+           (settings.vrMode && this.stereoMakerService.isFileSupported(file));
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getStereoCacheStats() {
+    let totalSize = 0;
+    this.stereoCache.forEach(blob => {
+      totalSize += blob.size;
+    });
+
+    return {
+      itemCount: this.stereoCache.size,
+      totalSize: totalSize,
+      totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+      queueLength: this.stereoLoadingQueue.length,
+      currentlyLoading: this.currentlyLoading.size
+    };
   }
 
 }
