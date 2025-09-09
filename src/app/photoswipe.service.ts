@@ -235,9 +235,7 @@ export class PhotoswipeService {
           // Use cached VR image
           this.displayCachedVrImage(content, file, cachedBlob);
         } else {
-          // Queue VR image generation with high priority
-          this.queueStereoGeneration(file, 0); // Priority 0 = highest
-          // Generate immediately for display
+          // Generate immediately for display (force immediate processing)
           this.generateAndCacheVrImage(content, file);
         }
       } else if(isContentType(content, 'stereo-image')) {
@@ -249,9 +247,7 @@ export class PhotoswipeService {
           // Use cached stereo image
           this.displayCachedStereoImage(content, file, cachedBlob);
         } else {
-          // Queue stereo image generation with high priority
-          this.queueStereoGeneration(file, 0); // Priority 0 = highest
-          // Generate immediately for display
+          // Generate immediately for display (force immediate processing)
           this.generateAndCacheStereoImage(content, file);
         }
       } else if(isContentType(content, 'video')) {
@@ -352,13 +348,13 @@ export class PhotoswipeService {
     // Queue adjacent images when slide changes
     pswp.on('change', () => {
       const currentIndex = pswp.currIndex;
-      this.queueAdjacentImages(items, currentIndex);
+      this.queueAdjacentImages(items, currentIndex, false); // Not initial load
     });
 
     // Queue initial adjacent images when PhotoSwipe opens
     pswp.on('firstUpdate', () => {
       const currentIndex = pswp.currIndex;
-      this.queueAdjacentImages(items, currentIndex);
+      this.queueAdjacentImages(items, currentIndex, true); // Initial load
     });
 
     pswp.on('contentActivate', ({content}) => {
@@ -622,6 +618,13 @@ export class PhotoswipeService {
    * Generate and cache a new stereo image
    */
   private generateAndCacheStereoImage(content: Content, file: HydrusBasicFile) {
+    // Check cache first
+    const cachedBlob = this.stereoCache.get(file.hash);
+    if (cachedBlob) {
+      this.displayCachedStereoImage(content, file, cachedBlob);
+      return;
+    }
+
     this.stereoMakerService.generateStereoImage(file).subscribe({
       next: (blob) => {
         // Cache the blob for future use
@@ -679,6 +682,13 @@ export class PhotoswipeService {
    * Generate and cache a new VR image
    */
   private generateAndCacheVrImage(content: Content, file: HydrusBasicFile) {
+    // Check cache first
+    const cachedBlob = this.stereoCache.get(file.hash);
+    if (cachedBlob) {
+      this.displayCachedVrImage(content, file, cachedBlob);
+      return;
+    }
+
     this.stereoMakerService.generateStereoImage(file).subscribe({
       next: (blob) => {
         // Cache the blob for future use
@@ -697,9 +707,9 @@ export class PhotoswipeService {
   /**
    * Queue stereo image generation with priority
    */
-  private queueStereoGeneration(file: HydrusBasicFile, priority: number = 0) {
-    // Skip if already cached or currently loading
-    if (this.stereoCache.has(file.hash) || this.currentlyLoading.has(file.hash)) {
+  private queueStereoGeneration(file: HydrusBasicFile, priority: number = 0, forceImmediate: boolean = false) {
+    // Skip if already cached
+    if (this.stereoCache.has(file.hash)) {
       return;
     }
 
@@ -708,8 +718,17 @@ export class PhotoswipeService {
       return;
     }
 
-    // Remove existing queue entry if any
-    this.stereoLoadingQueue = this.stereoLoadingQueue.filter(item => item.file.hash !== file.hash);
+    // If this is a high priority request (priority 0) or force immediate, process immediately
+    if (priority === 0 || forceImmediate) {
+      this.processImmediately(file);
+      return;
+    }
+
+    // Skip if already in queue or currently loading
+    if (this.currentlyLoading.has(file.hash) ||
+        this.stereoLoadingQueue.some(item => item.file.hash === file.hash)) {
+      return;
+    }
 
     // Add to queue with priority
     this.stereoLoadingQueue.push({ file, priority });
@@ -722,11 +741,45 @@ export class PhotoswipeService {
   }
 
   /**
+   * Process stereo generation immediately (for current/high priority images)
+   */
+  private processImmediately(file: HydrusBasicFile) {
+    // Skip if already cached or currently loading
+    if (this.stereoCache.has(file.hash) || this.currentlyLoading.has(file.hash)) {
+      return;
+    }
+
+    // Cancel any queued request for this file
+    this.stereoLoadingQueue = this.stereoLoadingQueue.filter(item => item.file.hash !== file.hash);
+
+    this.currentlyLoading.add(file.hash);
+
+    // Generate stereo image immediately
+    this.stereoMakerService.generateStereoImage(file).subscribe({
+      next: (blob) => {
+        // Cache the blob
+        this.stereoCache.set(file.hash, blob);
+        this.currentlyLoading.delete(file.hash);
+
+        // Process next item in queue
+        this.processQueue();
+      },
+      error: (error) => {
+        console.error('Failed to generate stereo image immediately for file:', file.hash);
+        this.currentlyLoading.delete(file.hash);
+
+        // Process next item in queue even on error
+        this.processQueue();
+      }
+    });
+  }
+
+  /**
    * Process the stereo loading queue
    */
   private processQueue() {
     // If already processing max concurrent requests, return
-    if (this.currentlyLoading.size >= 2) { // Allow 2 concurrent requests
+    if (this.currentlyLoading.size >= 1) { // Allow only 1 concurrent request
       return;
     }
 
@@ -775,23 +828,45 @@ export class PhotoswipeService {
   /**
    * Queue adjacent images with proper priorities
    */
-  private queueAdjacentImages(items: HydrusBasicFile[], currentIndex: number) {
-    const maxDistance = 5; // Queue images within 5 positions of current
+  private queueAdjacentImages(items: HydrusBasicFile[], currentIndex: number, isInitialLoad: boolean = false) {
     const totalItems = items.length;
 
-    for (let distance = 1; distance <= maxDistance; distance++) {
-      // Queue next image
-      const nextIndex = (currentIndex + distance) % totalItems;
-      const nextFile = items[nextIndex];
-      if (this.isStereoOrVrImage(nextFile)) {
-        this.queueStereoGeneration(nextFile, distance); // Priority based on distance
+    // For initial load, prioritize current image and immediate neighbors
+    if (isInitialLoad) {
+      // First, queue the current image with highest priority (this will be processed immediately)
+      const currentFile = items[currentIndex];
+      if (this.isStereoOrVrImage(currentFile)) {
+        this.queueStereoGeneration(currentFile, 0, true); // Force immediate processing
       }
 
-      // Queue previous image
-      const prevIndex = (currentIndex - distance + totalItems) % totalItems;
+      // Queue only the immediate next and previous images
+      // Next image (priority 1)
+      const nextIndex = (currentIndex + 1) % totalItems;
+      const nextFile = items[nextIndex];
+      if (this.isStereoOrVrImage(nextFile)) {
+        this.queueStereoGeneration(nextFile, 1);
+      }
+
+      // Previous image (priority 2)
+      const prevIndex = (currentIndex - 1 + totalItems) % totalItems;
       const prevFile = items[prevIndex];
       if (this.isStereoOrVrImage(prevFile)) {
-        this.queueStereoGeneration(prevFile, distance); // Priority based on distance
+        this.queueStereoGeneration(prevFile, 2);
+      }
+    } else {
+      // For slide changes, only queue the new adjacent images that might not be cached
+      // Next image (priority 1)
+      const nextIndex = (currentIndex + 1) % totalItems;
+      const nextFile = items[nextIndex];
+      if (this.isStereoOrVrImage(nextFile)) {
+        this.queueStereoGeneration(nextFile, 1);
+      }
+
+      // Previous image (priority 2)
+      const prevIndex = (currentIndex - 1 + totalItems) % totalItems;
+      const prevFile = items[prevIndex];
+      if (this.isStereoOrVrImage(prevFile)) {
+        this.queueStereoGeneration(prevFile, 2);
       }
     }
   }
